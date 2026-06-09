@@ -1,2 +1,11 @@
-# qr-whatsapp-bot
-QR-based order and menu booking system through WhatsApp bot integration
+
+  # Digital Ticket Screen Layout
+
+  This is a code bundle for Digital Ticket Screen Layout. The original project is available at https://www.figma.com/design/G7NaogrEAU9TsLgBELvmGQ/Digital-Ticket-Screen-Layout.
+
+  ## Running the code
+
+  Run `npm i` to install the dependencies.
+
+  Run `npm run dev` to start the development server.
+  
