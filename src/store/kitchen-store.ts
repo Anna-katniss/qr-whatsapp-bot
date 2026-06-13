@@ -83,17 +83,22 @@ export const useKitchenStore = create<KitchenStore>((set, get) => ({
       const { data: dbOrders, error } = await supabase
         .from('orders')
         .select(`
-          id,
-          status,
-          created_at,
-          table_number,
-          order_items (
-            id,
-            quantity,
-            customizations,
-            menu_item_id
-          )
-        `);
+              id,
+              status,
+              created_at,
+              table_number,
+              order_items (
+                    id,
+                    quantity,
+                    customizations,
+                    menu_item_id
+              ),
+              order_notes (
+                    id,
+                    text,
+                    is_allergy
+              )
+          `);
 
       if (error) throw error;
 
@@ -110,13 +115,16 @@ export const useKitchenStore = create<KitchenStore>((set, get) => ({
         });
 
         return {
-          id: dbOrder.id,
-          tableNumber: dbOrder.table_number || 'Takeaway',
-          items: items,
-          notes: [],
-          receivedAt: new Date(dbOrder.created_at),
-          status: (dbOrder.status === 'placed' ? 'pending' : dbOrder.status) as OrderStatus || 'pending',
-        };
+              id: dbOrder.id,
+              tableNumber: dbOrder.table_number || 'Takeaway',
+              items: items,
+              notes: (dbOrder.order_notes || []).map((n: any) => ({
+              text: n.text,
+              isAllergy: n.is_allergy
+          })),
+              receivedAt: new Date(dbOrder.created_at),
+              status: (dbOrder.status === 'placed' ? 'pending' : dbOrder.status) as OrderStatus || 'pending',
+              };
       });
 
       set({ orders: transformedOrders, isLoading: false });
