@@ -153,6 +153,29 @@ export const useKitchenStore = create<KitchenStore>((set, get) => ({
           }
         )
         .subscribe();
+      supabase
+        .channel('kitchen_order_items')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'order_items' },
+          (payload) => {
+            console.log('Order item change received!', payload);
+            get().initialize();
+          }
+        )
+        .subscribe();
+
+      supabase
+        .channel('kitchen_menu_items')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'menu_items' },
+          (payload) => {
+            console.log('Menu item change received!', payload);
+            get().initialize();
+          }
+        )
+        .subscribe();
 
     } catch (err: any) {
       console.error('Error initializing store:', err);
