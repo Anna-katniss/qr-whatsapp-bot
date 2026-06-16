@@ -33,12 +33,14 @@ export function OrderTicket({ order, onStatusChange, onComplete, compact = false
   const [elapsedMinutes, setElapsedMinutes] = useState(getElapsedMinutes(order.receivedAt));
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setElapsedMinutes(getElapsedMinutes(order.receivedAt));
-    }, 1000);
+  if (order.status === 'ready') return; // Don't start interval if already ready
 
-    return () => clearInterval(interval);
-  }, [order.receivedAt]);
+  const interval = setInterval(() => {
+    setElapsedMinutes(getElapsedMinutes(order.receivedAt));
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [order.receivedAt, order.status]); // Add order.status to deps
 
   const ticketColor = getTicketColor(elapsedMinutes, order.status);
   const timerColor = getTimerColor(elapsedMinutes, order.status);
