@@ -1,0 +1,641 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5fa4fc14-44b1-41d1-9336-ba20bb7a5ad1",
+              "name": "from",
+              "value": "={{ $json.contacts[0].wa_id }}",
+              "type": "string"
+            },
+            {
+              "id": "3945af94-a9d3-490e-ac6a-921c0d4bccb4",
+              "name": "name",
+              "value": "={{ $json.contacts[0].profile.name }}",
+              "type": "string"
+            },
+            {
+              "id": "0165ec90-7147-4263-b119-48fd6f3fc0d8",
+              "name": "text",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "6c221b92-08e1-4b0e-b45e-70705c75c813",
+              "name": "cart",
+              "value": "[]",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        304,
+        0
+      ],
+      "id": "b9282d4d-d883-4b52-bcfa-b26f4f3ba6ea",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=System Prompt:\n\nYou are an elite, efficient, and friendly WhatsApp restaurant ordering assistant for \"Spice Garden\". \nYour core goal is to take table orders, manage carts, record preferences, and handle checkouts flawlessly using your available tools.\n\nCRITICAL TOOL EXECUTION RULES:\n1. NEVER hallucinate an order ID or menu item ID. Always use the IDs returned by your tools.\n2. Call 'get_menu' EXACTLY ONCE per conversation when the user first greets you or asks for the menu. Once fetched, rely on your memory—never call 'get_menu' again.\n3. ALWAYS call 'create_order' the absolute moment a customer decides to place their first order.\n4. ALWAYS call 'get_order' before doing any secondary modification (adding, updating, removing, adding a note, or cancelling). Never assume you know the current state of the order without calling 'get_order' first.\n5. All currency must be displayed in Indian Rupees (₹). Keep WhatsApp responses highly structured, scannable, short, and polite.\n\nCONVERSATION FLOW PROTOCOLS:\n\n- ON FIRST GREETING (\"Hi\", \"Hello\", etc.):\n  1. Call 'get_menu' once.\n  2. Display the full menu beautifully with prices in ₹.\n  3. Politely ask what they want to order and their table number (or if it's for takeaway).\n\n- WHEN CUSTOMER SAYS WHAT THEY WANT TO ORDER:\n  1. If they did not provide a table number or mention takeaway, explicitly ask for it before proceeding.\n  2. Match their items against the menu in your memory to find the 'menu_item_id'. If an item isn't on the menu, apologize and suggest a close alternative.\n  3. Call 'create_order' with table_number, customer_phone, status: \"pending\", total_amount.\n  4. Use the returned 'order_id' to call 'add_order_item' for EACH unique item ordered.\n  5. Respond exactly with the ORDER PLACED format.\n\n- WHEN CUSTOMER MODIFIES ITEMS (ADD/REMOVE):\n  1. Always call 'get_order' first to fetch the active order details.\n  2. To ADD: Match the menu_item_id from memory, call 'add_order_item', and reply with the ITEM ADDED format.\n  3. To REMOVE: Look at the list of items from 'get_order'. \n     - If current quantity is 1 OR they want to remove all of it, call 'remove_order_item'. Reply with ITEM REMOVED format.\n     - If current quantity is 2 or more and they only want to reduce it, calculate the new quantity and call 'update_order_item'. Reply with QUANTITY UPDATED format.\n\n- WHEN CUSTOMER HAS SPECIAL REQUESTS/ALLERGIES:\n  1. Call 'get_order' to get the active order_id.\n  2. Determine if it's an allergy (e.g., peanuts, dairy, gluten -> is_allergy: true) or a simple preference (e.g., extra spicy, no onions -> is_allergy: false).\n  3. Call 'add_order_note'.\n  4. Confirm using the NOTE SAVED format.\n\n- WHEN CUSTOMER CANCELS:\n  1. Call 'get_order'.\n  2. Call 'cancel_order'.\n  3. Confirm using the ORDER CANCELLED format.\n\n- WHEN CUSTOMER REQUESTS CHECKOUT/BILL:\n  1. Provide a final summary of their ordered items.\n  2. Instruct them to pay at the counter (UPI or Cash only).\n  3. State that their order is heading to the kitchen.\n\nSTRICT TEMPLATE FORMATS (Output exactly as shown, substituting variables):\n\nORDER PLACED:\n✅ Order placed!\n[item] x[qty] - ₹[price]\nTotal: ₹[total]\nGoing to kitchen now! 🍽️\n\nITEM ADDED:\n✅ Item added!\n[item] x[qty] - ₹[price]\nUpdated total: ₹[total]\n🍽️\n\nITEM REMOVED:\n❌ Removed [item] from your order!\nUpdated total: ₹[total]\n\nQUANTITY UPDATED:\n✏️ Updated [item] quantity to [new qty]!\nUpdated total: ₹[total]\n\nNOTE SAVED:\n📝 Got it! Special instruction noted:\n\"[instruction]\"\n[If allergy: ⚠️ Allergy alert added!]\n\nORDER CANCELLED:\n🚫 Your order has been cancelled!\nSorry to see you go, visit us again!\n\nFAQ QUICK ANSWERS:\n- Timings: 8AM to 10PM daily.\n- Payments: UPI and Cash only.\n- Modifications/Cancellations: Permitted entirely before checkout.\n- Sessions: One table per WhatsApp chat session.\n\n\nUser Message: {{ $json.text }}\nSession ID: {{ $json.from }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        592,
+        0
+      ],
+      "id": "f0e31912-9f44-46c7-bcfb-3cec85c301cb",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.from }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        400,
+        224
+      ],
+      "id": "b6df3194-dc68-48b0-b88d-5315d49dffdd",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1134013686451416",
+        "recipientPhoneNumber": "={{ $('Edit Fields').item.json.from }}",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1184,
+        0
+      ],
+      "id": "089202a9-7cd6-474f-8c1b-f7a3fb9faa90",
+      "name": "Send message",
+      "webhookId": "c80cdae3-db8c-4366-84c3-7825097d1d84",
+      "alwaysOutputData": false,
+      "retryOnFail": false,
+      "credentials": {
+        "whatsAppApi": {
+          "id": "BNxX63VJg0em34g2",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        192
+      ],
+      "id": "1b770735-5ab9-4754-8617-7739f894e92e",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "hnw3s3TznYXzdqKR",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this to fetch the menu from database. Call this whenever customer asks about menu, prices, or before taking any order. Only show items where is_available is true. Always fetch fresh menu before every order.",
+        "operation": "getAll",
+        "tableId": "menu_items",
+        "orderBy": "category.asc",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "is_available",
+              "condition": "is",
+              "keyValue": "true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        800,
+        272
+      ],
+      "id": "ebe91c2d-9d6b-4eb6-ad23-987fcdf060fa",
+      "name": "get_menu",
+      "credentials": {
+        "supabaseApi": {
+          "id": "ERtz0Fbu3hHvNUpt",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Call this tool when a customer wants to place an order. MUST be called when customer confirms their order. Requires table_number and items. ",
+        "method": "POST",
+        "url": "https://bvpcyjwzcsgtgwpagbus.supabase.co/rest/v1/orders",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"table_number\": \"{{ $fromAI('table_number', 'The table number where the customer is sitting', 'number') }}\",\n  \"customer_phone\": \"{{ $('Edit Fields').item.json.from }}\",\n  \"status\": \"pending\",\n  \"total_amount\": \"{{ $fromAI('total_amount', 'Total price of all items ordered', 'number') }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        608,
+        272
+      ],
+      "id": "b450ed95-1762-411b-b83f-42601739ddfc",
+      "name": "create_order"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Call this tool to fetch the customer's current active order. ALWAYS call this before modifying, cancelling, or adding items to an existing order. Uses the customer's phone number to find their order.",
+        "url": "https://bvpcyjwzcsgtgwpagbus.supabase.co/rest/v1/orders?status=eq.pending&order=created_at.desc&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        704,
+        384
+      ],
+      "id": "63e4360c-4cd4-4cf5-8c0a-5e4edf4deae2",
+      "name": "get_order"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://bvpcyjwzcsgtgwpagbus.supabase.co/rest/v1/order_items",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"order_id\": \"{{ $fromAI('order_id', 'The UUID of the existing order', 'string') }}\",\n  \"menu_item_id\": \"{{ $fromAI('menu_item_id', 'The UUID of the menu item being added', 'string') }}\",\n  \"quantity\": \"{{ $fromAI('quantity', 'Number of items to add', 'number') }}\"\n  \n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        480,
+        368
+      ],
+      "id": "fe31361a-1882-413b-bc36-5fb9a5ba8aea",
+      "name": "add_order_item"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Call this tool when customer wants to cancel their entire order. ALWAYS call get_order first to get the order_id before cancelling.",
+        "method": "DELETE",
+        "url": "=https://bvpcyjwzcsgtgwpagbus.supabase.co/rest/v1/orders?id=eq.{{ $fromAI('order_id', 'The UUID of the order to cancel', 'string') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"status\": \"cancelled\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        976,
+        272
+      ],
+      "id": "cde4f58b-0507-4e26-a72b-7c2bbe83af66",
+      "name": "cancel_order"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Call this tool when customer wants to remove a specific item from their order. ALWAYS call get_order first to get the list of order_items and their ids. Use the specific order_item id (not menu_item_id) to remove exactly one item. Requires order_item_id.",
+        "method": "DELETE",
+        "url": "=https://bvpcyjwzcsgtgwpagbus.supabase.co/rest/v1/order_items?id=eq.{{ $fromAI('order_item_id', 'The specific UUID of the order item row to remove', 'string') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        912,
+        384
+      ],
+      "id": "2a18d75f-a212-4185-b5ce-85da3853b4fc",
+      "name": "remove_order_item"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Call this tool when a customer mentions any special instructions, preferences or allergies foar their order. Examples: 'no sugar', 'extra spicy', 'no peanuts', 'less ice'. Pass the current order_id, the instruction as text, and set is_allergy to true if it's an allergy, false if it's just a preference.",
+        "method": "POST",
+        "url": "https://bvpcyjwzcsgtgwpagbus.supabase.co/rest/v1/order_notes",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"order_id\": \"{{ $fromAI('order_id') }}\",\n  \"text\": \"{{ $fromAI('text') }}\",\n  \"is_allergy\": {{ $fromAI('is_allergy') }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        1104,
+        384
+      ],
+      "id": "cfa1aeb0-4cee-40e2-a14d-910906331bbd",
+      "name": "add_order_note"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Call this tool to update the quantity of an existing order item. Use when customer wants to remove some but not all of a particular item. Requires the specific order_item id and the new quantity.",
+        "method": "PATCH",
+        "url": "=https://bvpcyjwzcsgtgwpagbus.supabase.co/rest/v1/order_items?id=eq.{{ $fromAI('order_item_id', 'The specific UUID of the order item row to update', 'string') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2cGN5and6Y3NndGd3cGFnYnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzNzY2NjgsImV4cCI6MjA5NTk1MjY2OH0.e9Q1F4FTzyYo6IKlXm7diBzdyI5738ggOtbkRUj8zO4"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"quantity\": {{ $fromAI('quantity', 'The new updated quantity for the item', 'number') }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        1168,
+        272
+      ],
+      "id": "1b4009d3-6199-49d0-b7e0-6f0524e0824d",
+      "name": "update_order_item"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        16
+      ],
+      "id": "f9b55f68-4699-411c-afea-6aed6a0fadc4",
+      "name": "WhatsApp Trigger",
+      "webhookId": "89d55952-5fcc-42ad-b405-3c7e9aa432c1",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "5EoYiPjMeRFqn19T",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3c94c48b-e70f-4f02-afb8-48c4ad9009a5",
+              "leftValue": "={{ $json.messages[0].text.body }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        64,
+        16.89090909090909
+      ],
+      "id": "a357976a-35ae-4801-ab46-f8820e40cd71",
+      "name": "If1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_menu": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_order": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_order": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "add_order_item": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cancel_order": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "remove_order_item": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "add_order_note": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update_order_item": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "4adf72f1-bd53-4bad-9e75-cb9b93c03b59",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "227993698fd4186e8b97eb42d0200a1755c1e3c2345ecaf884bb96de88c1d46c"
+  },
+  "nodeGroups": [],
+  "id": "GX2Mm7nNwe8m2YKY",
+  "tags": []
+}
