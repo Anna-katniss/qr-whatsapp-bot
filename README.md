@@ -28,7 +28,7 @@ An automated WhatsApp chatbot built with n8n that handles restaurant orders. Whe
 
 ## Import into n8n
 
-1. Download `n8n workflow.json` from this repository
+1. Download `My workflow.json` from this repository
 2. Open n8n
 3. Click **Import from File**
 4. Select the workflow file
